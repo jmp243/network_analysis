@@ -114,24 +114,6 @@ write.csv(nodes_gephi,"~/Documents/Trellis/Network_Analysis_Tableau/data/nodes_g
 # )
 # gephi <- read.gexf(fn)
 
-# bringing in the X Target and Y Target csv
-tableau_xy <- read_csv("~/Documents/Trellis/Network_Analysis_Tableau/data/gephi_output_from_xml.csv")
-tableau_xy$Source <- as.character(tableau_xy$Source)
-
-tableau_xy <- tableau_xy %>% 
-  left_join(nodes) %>% 
-  # select(-`Attribute:for`) %>% 
-  mutate(base = 1)
-
-tableau_xy2 <- read_csv("~/Documents/Trellis/Network_Analysis_Tableau/data/gephi_output_from_xml.csv")
-tableau_xy2$Source <- as.character(tableau_xy2$Source)
-
-tableau_xy2 <- tableau_xy2 %>% 
-  left_join(nodes) %>% 
-  # select(-`Attribute:for`) %>% 
-  mutate(base = 2)
-
-tableau_table <- rbind(tableau_xy, tableau_xy2)
 
 # bringing in edges from Gephi/xml/excel
 gephi_edges <- read_csv("~/Documents/Trellis/Network_Analysis_Tableau/data/edges_from_xml.csv")
@@ -140,20 +122,53 @@ gephi_edges <- gephi_edges %>%
   rename(Index = `Attribute:id`) %>% 
   rename(Target = `Attribute:target`)
 gephi_edges$Source <- as.character(gephi_edges$Source)
-  
-# merge tableau table to edges
-network_tableau <- tableau_table %>% 
-  left_join(gephi_edges)
 
-# reduce the data size
-network_tableau2 <- network_tableau %>% 
-  filter(!is.na(Target) | Target != "")
+
+# merge tableau table to edges
+student_name <- d3 %>% 
+  select(new_id, student_name) %>% 
+  rename(Target = new_id) 
+student_name$Target <- as.numeric(student_name$Target)
+
+# bringing in the X Target and Y Target csv
+tableau_xy <- read_csv("~/Documents/Trellis/Network_Analysis_Tableau/data/gephi_output_from_xml.csv")
+tableau_xy$Source <- as.character(tableau_xy$Source)
+
+tableau_xy1 <- tableau_xy %>% 
+  left_join(nodes) %>% 
+  # select(-`Attribute:for`) %>% 
+  mutate(base = 1) %>% 
+  left_join(gephi_edges) %>% 
+  left_join(student_name)
+
+tableau_xy1$direction <- paste(tableau_xy1$Source, "->", tableau_xy1$Target)
+
 
 # create a column named direction
-network_tableau2$direction <- paste(network_tableau2$Source, "->", network_tableau2$Target)
-network_tableau2 <- network_tableau2 %>% 
-  select(-`Attribute:value.1`) %>% 
+# network_tableau2$direction <- paste(network_tableau2$Source, "->", network_tableau2$Target)
+# network_tableau2 <- network_tableau2 %>% 
+#   select(-`Attribute:value.1`) %>% 
+#   distinct()
+
+tableau_xy2 <- read_csv("~/Documents/Trellis/Network_Analysis_Tableau/data/gephi_output_from_xml.csv")
+tableau_xy2$Source <- as.character(tableau_xy2$Source)
+
+tableau_xy2 <- tableau_xy2 %>% 
+  left_join(nodes) %>% 
+  # select(-`Attribute:for`) %>% 
+  mutate(base = 2) %>% 
+  left_join(gephi_edges) %>% 
+  left_join(student_name)
+
+tableau_xy2$direction <- paste(tableau_xy2$Target, "->", tableau_xy2$Source)
+tableau_table <- rbind(tableau_xy1, tableau_xy2)
+
+# reduce the data size
+network_tableau2 <- tableau_table %>% 
+  filter(!is.na(Target) | Target != "") %>% 
   distinct()
+
+
 
 # write name csv for the tableau table
 write.csv(network_tableau,"~/Documents/Trellis/Network_Analysis_Tableau/data/network_tableau.csv")
